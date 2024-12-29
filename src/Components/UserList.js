@@ -36,31 +36,45 @@ const UserList = () => {
     }
   };
 
-  // Efeitos ao montar o componente
+  const formatCPF = (cpf) => {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const formatDate = (date) => {
+    const [year, month, day] = date.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  // Atualiza o estado do termo de busca
   useEffect(() => {
     const search = getSearchParam();
-    setSearchTerm(search); // Atualiza o estado do termo de busca de acordo com o parâmetro
+    setSearchTerm(search);
   }, [location.search]);
 
-  // Filtra usuários com base no nome ou na data de nascimento
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.birth_date && user.birth_date.includes(searchTerm))
-  );
+  // Filtrando usuários pelo nome, CPF e data de nascimento
+  const filteredUsers = users.filter(user => {
+    const formattedBirthDate = formatDate(user.date_of_birth);
+    return (
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      formatCPF(user.cpf).includes(searchTerm) ||
+      formattedBirthDate.includes(searchTerm)
+    );
+  });
 
   return (
-    <div>
-      <h1>Lista de Usuários</h1>
-      <Link to="/add">Cadastrar Novo Usuário</Link>
-      <div>
+    <div className="container mt-4">
+      <h1 className="mb-4">Lista de Usuários</h1>
+      <div className="mb-3">
+        <Link to="/add" className="btn btn-primary">Cadastrar Novo Usuário</Link>
+      </div>
+      <div className="input-group mb-3">
         <input
           type="text"
-          placeholder="Buscar por nome ou Data de Nascimento"
+          className="form-control"
+          placeholder="Buscar por nome, CPF ou Data de Nascimento"
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
@@ -74,15 +88,35 @@ const UserList = () => {
           }}
         />
       </div>
-      <ul>
-        {filteredUsers.map((user) => (
-          <li key={user.id}>
-            {user.name} - {user.email}
-            <Link to={`/edit/${user.id}`}> Editar</Link>
-            <a href="#" style={{ marginLeft: '5px' }} onClick={() => handleDelete(user.id)}>Excluir</a>
-          </li>
-        ))}
-      </ul>
+      <table className="table table-bordered table-striped">
+        <thead className="table-dark">
+          <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Data de Nascimento</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((user) => (
+              <tr key={user.id}>
+                <td>{user.name}</td>
+                <td>{formatCPF(user.cpf)}</td>
+                <td>{formatDate(user.date_of_birth)}</td>
+                <td>
+                  <Link to={`/edit/${user.id}`} className="btn btn-warning btn-sm me-2">Editar</Link>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(user.id)}>Excluir</button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="4" className="text-center">Nenhum usuário encontrado.</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 };
